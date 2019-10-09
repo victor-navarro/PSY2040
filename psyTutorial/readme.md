@@ -1,7 +1,7 @@
 ## Read me
 
 If you are here, you have chosen to get involved in programming your experiment.
-For this semester, we program the experiments in **Octave**, using **Psychtoolbox** extensions.
+During this semester, I will program the experiments in **Octave**, using **Psychtoolbox** extensions.
 
 If you use Windows, here is what you need to get started:
 
@@ -11,4 +11,6 @@ If you use Windows, here is what you need to get started:
 4. Download the files in this repository and extract them wherever you want. Then, from Octave, cd into the folder and run any of the scripts.
 
 If you use MAC or Linux, the installation of Octave should be straightforward. However, follow the instructions in the Psychtoolbox website to get it running in your platform.
+
+If you do not have much experience programming, or are not familiar with Octave or Psychtoolbox, you can find tutorials [here](https://www.youtube.com/watch?v=sHGqwF2s-tM) and [here](http://peterscarfe.com/ptbtutorials.html).
 
