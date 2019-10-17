@@ -79,9 +79,6 @@ function spatialBias(params)
 	
 	fixRect = [xc, yc, xc, yc] + [-xpix, -xpix, xpix, xpix]*.05;
 	
-	window
-	
-	
 	%Get the grid
 	g_steps = 10;
 	gridx = screen_rect(1):(screen_rect(3)/g_steps):screen_rect(3);
@@ -112,6 +109,9 @@ function spatialBias(params)
 	for t = 1:4
 		distractors{t} = Screen('MakeTexture', window, distractors{t});
 	end
+	
+	%create a filename to save the data
+	fname = sprintf('./data/%s_%s_%d-%d.txt', params.name, date(), clock()(4:5)); 
 		
 	%Give trials
 	expRunning = 1;
@@ -195,6 +195,8 @@ function spatialBias(params)
 				end
 		
 			case 'TRIALEND'
+				%save data
+				saveData(fname, [currentTrial,targetQuadrant,acc,RT]);
 				if currentTrial == maxTrials
 					expRunning = 0;
 					expState = 'SESSIONFINISH';
@@ -227,7 +229,7 @@ function theKey = getKeyResponse(keys)
 	end
 end
 
-function state = abortCheck(state);
+function state = abortCheck(state)
 	[pressed, ~, key] = KbCheck();
 	if pressed
 		keys = find(key); %Q and P
@@ -237,4 +239,11 @@ function state = abortCheck(state);
 			end
 		end
 	end
+end
+
+function saveData(fname, data)
+	f = fopen(fname, 'a');
+	fprintf(f, '%d\t%d\t%d\t%2.4f\n', ... %trial, target q, correct, RT
+	data(1), data(2), data(3), data(4));
+	fclose(f);
 end

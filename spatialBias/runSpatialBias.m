@@ -1,7 +1,7 @@
 %This script sets some parameters and runs a categorization task supported by 
 clear all
 params = struct;
-params.task = 'SpatialBias';
+params.name = 'test_subject';
 params.nTrials = [12, 48, 12];
 params.richTrials = params.nTrials./[2, 8, 2];
 params.sparseTrials = (params.nTrials-params.richTrials)/3;
@@ -13,4 +13,5 @@ params.optionKeys = [70, 74];
 params.fix_duration = 1;
 params.feedback_duration = 1;
 params.qStims = 3;
+
 spatialBias(params);
