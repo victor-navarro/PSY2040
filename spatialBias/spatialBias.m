@@ -68,12 +68,23 @@ function spatialBias(params)
 	screens = Screen('Screens');
 	% Draw to the external screen if avaliable
 	screenNumber = max(screens);
-	screen_rect = [0, 0, 640, 640]; %Set the screen rect
+	if params.debugmode
+		screen_rect = [0, 0, 640, 640]; %Set the screen rect
+		display_rect = screen_rect;
+	else
+		w = Screen('Resolution', screenNumber).width;
+		h = Screen('Resolution', screenNumber).height;
+		hd = (w-h)/2;
+		screen_rect = [0, 0, w, h];
+		display_rect = [hd, 0, h+hd, h]
+	end
 
-	[window, windowRect] = PsychImaging('OpenWindow', screenNumber, [0, 0, 0], screen_rect, [], [], [], 16);
+	[window, windowRect] = PsychImaging('OpenWindow', screenNumber, params.screenbg, screen_rect, [], [], [], 16);
 	Screen('BlendFunction', window, 'GL_SRC_ALPHA', 'GL_ONE_MINUS_SRC_ALPHA');
 	% Get the size of the on screen window
-	[xpix, ypix] = Screen('WindowSize', window);
+	xpix = display_rect(3)-display_rect(1);
+	ypix = display_rect(4)-display_rect(2);
+	
 	% Get the centre coordinate of the window
 	[xc, yc] = RectCenter(windowRect);
 	
@@ -81,8 +92,8 @@ function spatialBias(params)
 	
 	%Get the grid
 	g_steps = 10;
-	gridx = screen_rect(1):(screen_rect(3)/g_steps):screen_rect(3);
-	gridy = screen_rect(2):(screen_rect(4)/g_steps):screen_rect(4);
+	gridx = display_rect(1):((display_rect(3)-display_rect(1))/g_steps):display_rect(3);
+	gridy = display_rect(2):((display_rect(4)-display_rect(2))/g_steps):display_rect(4);
 	stimX = gridx(2)-gridx(1)-1;
 	stimY = gridy(2)-gridy(1)-1;
 	grid = CombVec(gridx(1:(end-1)), gridy((1:end-1)))';
@@ -112,7 +123,7 @@ function spatialBias(params)
 	
 	%create a filename to save the data
 	fname = sprintf('./data/%s_%s_%d-%d.txt', params.name, date(), clock()(4:5)); 
-		
+		 jqp
 	%Give trials
 	expRunning = 1;
 	currentTrial = 1;
@@ -145,6 +156,7 @@ function spatialBias(params)
 					expState = 'SPACEBAR';
 					%Request spacebar press
 					message = 'Press SPACEBAR to initiate the next trial';
+					Screen('FillRect', window, params.stimbg, display_rect);
 					DrawFormattedText(window, message, 'center', 'center', [1, 1, 1]);
 					Screen('Flip', window);
 				end
@@ -153,6 +165,7 @@ function spatialBias(params)
 				if ~isempty(getKeyResponse([32]))
 					expState = 'FIXATION';
 					%give fixation		
+					Screen('FillRect', window, params.stimbg, display_rect);
 					Screen('DrawLine', window, [1, 1, 1], fixRect(1), yc, fixRect(3), yc, 4);
 					Screen('DrawLine', window, [1, 1, 1], xc, fixRect(2), xc, fixRect(4), 4);
 					Screen('Flip', window);
@@ -163,6 +176,7 @@ function spatialBias(params)
 				if toc(fixStart) >= params.fix_duration
 					expState = 'SEARCH';
 					%give search array
+					Screen('FillRect', window, params.stimbg, display_rect);
 					for s = 1:size(positions, 1)
 						stimRect = [positions(s, 1), positions(s, 2), positions(s, 1), positions(s, 2)];
 						stimRect = stimRect + [0, 0, stimX, stimY];
@@ -183,8 +197,9 @@ function spatialBias(params)
 					expState = 'FEEDBACK';
 					acc = params.optionKeys(correctOrientation) == key;
 					if acc; fStr = 'Correct!'; else; fStr = 'Error!', end;
+					Screen('FillRect', window, params.stimbg, display_rect);
 					DrawFormattedText(window, fStr, 'center', 'center', [1, 1, 1]);
-					DrawFormattedText(window, sprintf('RT: %6.0f', RT*1000), 10, windowRect(4)-20);
+					DrawFormattedText(window, sprintf('RT: %6.0f', RT*1000), 10, display_rect(4)-20);
 					Screen('Flip', window);
 					feedStart = tic;
 				end
@@ -205,7 +220,8 @@ function spatialBias(params)
 					expState = 'INITTRIAL';
 				end
 				%Clear screen
-				Screen('FillRect', window, [0, 0, 0], windowRect);
+				Screen('FillRect', window, params.screenbg, windowRect);
+				Screen('FillRect', window, params.stimbg, display_rect);
 				Screen('Flip', window);
 				
 			case {'SESSIONFINISH', 'ABORT'}
