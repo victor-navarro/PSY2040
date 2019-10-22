@@ -207,7 +207,7 @@ function spatialBias(params)
 					if acc; fStr = 'Correct!'; else; fStr = 'Error!', end;
 					Screen('FillRect', window, params.stimbg, display_rect);
 					DrawFormattedText(window, fStr, 'center', 'center', [1, 1, 1]);
-					DrawFormattedText(window, sprintf('RT: %6.0f', RT*1000), 10, display_rect(4)-20);
+					%DrawFormattedText(window, sprintf('RT: %6.0f', RT*1000), 10, display_rect(4)-20);
 					Screen('Flip', window);
 					feedStart = tic; %start timer for feedback duration
 				end
