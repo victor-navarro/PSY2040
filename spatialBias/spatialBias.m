@@ -78,7 +78,7 @@ function spatialBias(params)
 		h = Screen('Resolution', screenNumber).height;
 		hd = (w-h)/2;
 		screen_rect = [0, 0, w, h];
-		display_rect = [hd, 0, h+hd, h]
+		display_rect = [hd, 0, h+hd, h];
 	end
 	%Open the screen, get a pointer (window) and the screen's dimensions (windowRect)
 	[window, windowRect] = PsychImaging('OpenWindow', screenNumber, params.screenbg, screen_rect, [], [], [], 16);
