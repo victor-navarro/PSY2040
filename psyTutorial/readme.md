@@ -13,5 +13,5 @@ If you use Windows, here is what you need to get started:
 If you use MAC or Linux, the installation of Octave should be straightforward. The installation of Psychtoolbox should not require GStreamer, so skip step 2 of the previous tutorial.
 
 If you do not have much experience programming, or are not familiar with Octave or Psychtoolbox, you can find tutorials [here](https://www.youtube.com/watch?v=sHGqwF2s-tM) and [here](http://peterscarfe.com/ptbtutorials.html).
-Most of the basic MATLAB tutorials also apply to Octave, so you can consult those, too.
+Most of the basic MATLAB tutorials also apply to Octave, so you can consult those, too. [Here's a good one](http://www.antoniahamilton.com/matlab_for_psychologists.pdf).
 
