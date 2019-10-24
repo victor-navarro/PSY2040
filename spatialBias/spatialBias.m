@@ -2,64 +2,29 @@ function spatialBias(params)
 	%generate trials
 	trials = [];
 	for p = 1:3 %cycle through phases
-		ts = [];
-		%make trials for sparse quadrants
-		for q = find(params.richQ ~= [1, 2, 3 , 4])
-			ts = [ts; [repmat(q, [params.sparseTrials(p), 1]), repmat([1; 2], [params.sparseTrials(p)/2, 1])]];
+		for b = 1:params.nBlocks(p) %cycle through blocks
+			ts = [];
+			%make trials for sparse quadrants
+			for q = find(params.richQ ~= [1, 2, 3, 4])
+				ts = [ts; [repmat(q, [params.sparseTrials(p), 1]), repmat([1; 2], [params.sparseTrials(p)/2, 1])]];
+			end
+			%make trials for rich quadrant
+			ts = [ts; [repmat(params.richQ, [params.richTrials(p), 1]), repmat([1; 2], [params.richTrials(p)/2, 1])]];
+			%randomize trials
+			ts = ts(randperm(size(ts, 1)), :);
+			
+			%append to the totallity of trials
+			trials = [trials; [ts, repmat(p, [size(ts, 1), 1])]];
 		end
-		%make trials for rich quadrant
-		ts = [ts; [repmat(params.richQ, [params.richTrials(p), 1]), repmat([1; 2], [params.richTrials(p)/2, 1])]];
-		%randomize trials
-		ts = ts(randperm(size(ts, 1)), :);
-		
-		%append to the totallity of trials
-		trials = [trials; [ts, repmat(p, [size(ts, 1), 1])]];
 	end
+	
+	%create practice trials
+	ptrials = [1, 1, 0; 2, 2, 0;, 3, 1, 0;, 4, 2, 0];
+	%set practice trials to be active trials
+	aTrials = ptrials;
+	
 	%calculate some stuff
 	maxTrials = size(trials, 1);
-
-	%make stimuli
-	distractors = cell();		
-	targets = cell();
-	dev = 25;
-	padding = 10;
-	width = 4;
-	holder = ones(100, 100)*100;
-	%Make T's
-	h = holder;
-	h(padding:(padding+width), padding:(100-padding)) = 99;
-	h(padding+width:(100-padding), (50-width/2):(50+width/2)) = 99;
-	targets{1} = h';
-	targets{2} = h(100:-1:1, :)';
-	%Make Ls
-	h = holder;
-	h(padding:(100-padding), padding:(padding+width)) = 99;
-	h(50-dev:(50-dev+width), padding+width:(100-padding)) = 99;
-	distractors{1} = h';
-	distractors{2} = h(100:-1:1, :)';
-	distractors{3} = h(:, 100:-1:1)';
-	distractors{4} = h(100:-1:1, 100:-1:1)';
-	%Convert to RGB (tensor)
-	for t = 1:2
-		rgb = zeros(100, 100, 3);
-		for c = 1:3
-			h = targets{t};
-			h(h == 100) = params.stimbg(c);
-			h(h == 99) = params.stimcol(c);
-			rgb(:, :, c) = h;
-		end
-		targets{t} = rgb;
-	end
-	for t = 1:4
-		rgb = zeros(100, 100, 3);
-		for c = 1:3
-			h = distractors{t};
-			h(h == 100) = params.stimbg(c);
-			h(h == 99) = params.stimcol(c);
-			rgb(:, :, c) = h;
-		end
-		distractors{t} = rgb;
-	end	
 	
 	%initialize screen (Psychtoolbox)
 	PsychDefaultSetup(2);
@@ -114,11 +79,12 @@ function spatialBias(params)
 		quadpos{q} = find(gridpos(:, 3) == q)';
 	end
 	
+	[targets, distractors] = makeStimuli(params);
 	%Make stimulus textures (Psychtoolbox)
 	for t = 1:2
 		targets{t} = Screen('MakeTexture', window, targets{t});
 	end
-	for t = 1:4
+	for t = 1:8
 		distractors{t} = Screen('MakeTexture', window, distractors{t});
 	end
 	
@@ -127,23 +93,82 @@ function spatialBias(params)
 	%Give trials
 	expRunning = 1; %This keeps the while loop going
 	currentTrial = 1; %Trial counter
-	expState = 'INITTRIAL'; %expState is the variable we use in the switch-case conditionals; every time we want to advance within the trial, or between trials, we change that variable;
+	expState = 'INSTRUCTIONS'; %expState is the variable we use in the switch-case conditionals; every time we want to advance within the trial, or between trials, we change that variable;
 	%we start expState as INITTRIAL
 	while expRunning
 		%Check if we need to abort the experiment (Q and P being pressed in the keyboard)
 		expState = abortCheck(expState);
 		switch(expState)
+			case 'INSTRUCTIONS'
+				message = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit,\nsed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris\nnisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in\nreprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\nThese are instructions.\nPress SPACEBAR to initiate the next trial';
+				%Draw the message (Psychtoolbox)
+				Screen('FillRect', window, params.stimbg, display_rect);
+				DrawFormattedText(window, message, 'center', 'center', [1, 1, 1]);
+				Screen('Flip', window);
+				%Request spacebar press
+				inPractice = 1;
+				expState = 'INSTRUCTIONSGO';
+				
+			case {'INSTRUCTIONSGO', 'PRACTICEBEGINGO', 'PRACTICEREPEATGO', 'INITEXPGO'};
+				if ~isempty(getKeyResponse([32])) %32 is the keyboard code for SPACEBAR
+						runningAcc = [];
+						switch(expState)
+							case 'INSTRUCTIONSGO'
+								expState = 'PRACTICEBEGIN';
+							case {'PRACTICEBEGINGO', 'PRACTICEREPEATGO', 'INITEXPGO'}
+								expState = 'INITTRIAL'; %go to practice
+						end
+					%wait for release
+					while ~isempty(getKeyResponse([32]))
+					end
+				end
+				
+			case 'PRACTICEBEGIN'
+				message = 'Let''s start by doing some practice trials.\nPress SPACEBAR to continue.';
+				%Draw the message (Psychtoolbox)
+				Screen('FillRect', window, params.stimbg, display_rect);
+				DrawFormattedText(window, message, 'center', 'center', [1, 1, 1]);
+				Screen('Flip', window);
+				
+				expState = 'PRACTICEBEGINGO';
+				
+			case 'PRACTICEFAIL'
+				currentTrial = 1; %go back in time
+				message = 'You failed too many practice trials. Please try again.\nPress SPACEBAR to continue.';
+				%Draw the message (Psychtoolbox)
+				Screen('FillRect', window, params.stimbg, display_rect);
+				DrawFormattedText(window, message, 'center', 'center', [1, 1, 1]);
+				Screen('Flip', window);
+				expState = 'PRACTICEREPEATGO';
+			
+				
+			case 'PRACTICESUCCESS'
+				inPractice = 0;
+				currentTrial = 1;
+				aTrials = trials; %replace active trials with experimental trials
+				message = 'You have successfully completed the practice portion.\nPress SPACEBAR to begin the experiment.';
+				%Draw the message (Psychtoolbox)
+				Screen('FillRect', window, params.stimbg, display_rect);
+				DrawFormattedText(window, message, 'center', 'center', [1, 1, 1]);
+				Screen('Flip', window);
+				expState = 'INITEXPGO';
+			
+				
+				
 			case 'INITTRIAL';
 				%read trial data
-				targetQuadrant = trials(currentTrial, 1);
-				correctOrientation = trials(currentTrial, 2);
+				targetQuadrant = aTrials(currentTrial, 1);
+				correctOrientation = aTrials(currentTrial, 2);
 				
 				%randomize position for each grid, by shuffling the positions belonging to each grid, and picking qStims from each
 				positions = [];
+				trialPositions = [];
 				tpos = 0;
 				for q = 1:4
 					quadpos{q} = quadpos{q}(randperm(numel(quadpos{q})));
-					positions = [positions; grid(quadpos{q}(1:params.qStims), :)];
+					sampledPositions = quadpos{q}(1:params.qStims);
+					trialPositions = [trialPositions, sampledPositions];
+					positions = [positions; grid(sampledPositions, :)];
 					%check if the target should appear in the quadrant (we need to draw a different texture)
 					if targetQuadrant == q
 						tpos = (q-1)*params.qStims + randi(params.qStims);
@@ -163,10 +188,12 @@ function spatialBias(params)
 					Screen('FillRect', window, params.stimbg, display_rect);
 					DrawFormattedText(window, message, 'center', 'center', [1, 1, 1]);
 					Screen('Flip', window); %Everytime we draw something on the screen buffer, we need to flip the window in order to actually show it.
+					barInit = tic;
 				end
 				
 			case 'SPACEBAR'
 				if ~isempty(getKeyResponse([32])) %32 is the keyboard code for SPACEBAR
+					barRT = toc(barInit);
 					expState = 'FIXATION';
 					%give fixation		
 					Screen('FillRect', window, params.stimbg, display_rect);
@@ -182,15 +209,20 @@ function spatialBias(params)
 					%give search array
 					Screen('FillRect', window, params.stimbg, display_rect);
 					%to through all the positions we need to show a texture on, and draw according to whether it should be a distractor, or the target
+					trialStims = [];
 					for s = 1:size(positions, 1)
 						stimRect = [positions(s, 1), positions(s, 2), positions(s, 1), positions(s, 2)];
 						stimRect = stimRect + [0, 0, stimX, stimY];
 						if s == tpos
 							Screen('DrawTexture', window, targets{correctOrientation}, [], stimRect);
+							trialStims = [trialStims, -correctOrientation];
 						else
-							Screen('DrawTexture', window, distractors{randi(4)}, [], stimRect);
+							d = randi(8);
+							trialStims = [trialStims, d];
+							Screen('DrawTexture', window, distractors{d}, [], stimRect);
 						end
 					end
+					trialStims;
 					Screen('Flip', window);
 					%Start a timer to get the RT
 					Rstart = tic;					
@@ -204,7 +236,8 @@ function spatialBias(params)
 					%Give feedback
 					expState = 'FEEDBACK';
 					acc = params.optionKeys(correctOrientation) == key;
-					if acc; fStr = 'Correct!'; else; fStr = 'Error!', end;
+					runningAcc = [runningAcc, acc];
+					if acc; fStr = 'Correct!'; else; fStr = 'Error!'; end;
 					Screen('FillRect', window, params.stimbg, display_rect);
 					DrawFormattedText(window, fStr, 'center', 'center', [1, 1, 1]);
 					%DrawFormattedText(window, sprintf('RT: %6.0f', RT*1000), 10, display_rect(4)-20);
@@ -218,16 +251,32 @@ function spatialBias(params)
 				end
 		
 			case 'TRIALEND'
-				%save data
-				saveData(fname, [currentTrial,targetQuadrant,acc,RT]);
-				%Check if we're done running the experiment, otherwise go to the next trial
-				if currentTrial == maxTrials
-					expRunning = 0;
-					expState = 'SESSIONFINISH';
+				if ~inPractice
+					%save data
+					saveData(fname, [currentTrial,targetQuadrant,...
+									acc,RT,correctOrientation,aTrials(currentTrial, 3),...
+									barRT, params.richQ, trialStims, trialPositions]);
+					%Check if we're done running the experiment, otherwise go to the next trial
+					if currentTrial == maxTrials
+						expRunning = 0;
+						expState = 'SESSIONFINISH';
+					else
+						currentTrial = currentTrial + 1;
+						expState = 'INITTRIAL';
+					end
 				else
-					currentTrial = currentTrial + 1;
-					expState = 'INITTRIAL';
+					if currentTrial == 4 %have we completed 4 trials?
+						if mean(runningAcc) > .5
+							expState = 'PRACTICESUCCESS';
+						else
+							expState = 'PRACTICEFAIL';
+						end
+					else
+						currentTrial = currentTrial + 1;
+						expState = 'INITTRIAL';
+					end
 				end
+				
 				%Clear screen
 				Screen('FillRect', window, params.screenbg, windowRect);
 				Screen('FillRect', window, params.stimbg, display_rect);
@@ -270,7 +319,9 @@ end
 %This function is specially important. You'll have to modify it so it saves the data you need.
 function saveData(fname, data)
 	f = fopen(fname, 'a');
-	fprintf(f, '%d\t%d\t%d\t%2.4f\n', ... %trial, target q, correct, RT
-	data(1), data(2), data(3), data(4));
+	fprintf(f, '%d\t%d\t%d\t%2.6f\t %d\t%d\t%2.4f\t%d\t%s\t%s\n', ... %trial, target q, correct, RT, target o, phase, spacert, richQ, trialStims, trialPositions
+		data(1), data(2), data(3), data(4), data(5), data(6), data(7), data(8),...
+		sprintf([repmat('%d,', [1, 11]), '%d'], data(9:20)), ...
+		sprintf([repmat('%d,', [1, 11]), '%d'], data(21:32)));
 	fclose(f);
 end
