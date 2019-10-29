@@ -106,7 +106,6 @@ function spatialBias(params)
 				DrawFormattedText(window, message, 'center', 'center', [1, 1, 1]);
 				Screen('Flip', window);
 				%Request spacebar press
-				inPractice = 1;
 				expState = 'INSTRUCTIONSGO';
 				
 			case {'INSTRUCTIONSGO', 'PRACTICEBEGINGO', 'PRACTICEREPEATGO', 'INITEXPGO'};
@@ -124,12 +123,12 @@ function spatialBias(params)
 				end
 				
 			case 'PRACTICEBEGIN'
+				inPractice = 1;
 				message = 'Let''s start by doing some practice trials.\nPress SPACEBAR to continue.';
 				%Draw the message (Psychtoolbox)
 				Screen('FillRect', window, params.stimbg, display_rect);
 				DrawFormattedText(window, message, 'center', 'center', [1, 1, 1]);
 				Screen('Flip', window);
-				
 				expState = 'PRACTICEBEGINGO';
 				
 			case 'PRACTICEFAIL'
