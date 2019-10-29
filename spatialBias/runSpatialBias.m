@@ -15,6 +15,6 @@ params.optionKeys = [70, 74]; %Available response keys (F and J)
 params.fix_duration = 1; %Duration of the fixation cross
 params.feedback_duration = 1; %Duration of the feedback message
 params.qStims = 3; %Stimuli to be drawn on each quadrant
-params.debugmode = 1; %Fullscreen or not
+params.debugmode = 0; %Fullscreen or not
 
 spatialBias(params); %Run the experiment
