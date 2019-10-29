@@ -93,8 +93,8 @@ function spatialBias(params)
 	%Give trials
 	expRunning = 1; %This keeps the while loop going
 	currentTrial = 1; %Trial counter
-	expState = 'INSTRUCTIONS'; %expState is the variable we use in the switch-case conditionals; every time we want to advance within the trial, or between trials, we change that variable;
-	%we start expState as INITTRIAL
+	expState = 'PRACTICEBEGIN'; %expState is the variable we use in the switch-case conditionals; every time we want to advance within the trial, or between trials, we change that variable;
+	%we start expState as PRACTICEBEGIN
 	while expRunning
 		%Check if we need to abort the experiment (Q and P being pressed in the keyboard)
 		expState = abortCheck(expState);
