@@ -12,9 +12,8 @@ function spatialBias(params)
 			ts = [ts; [repmat(params.richQ, [params.richTrials(p), 1]), repmat([1; 2], [params.richTrials(p)/2, 1])]];
 			%randomize trials
 			ts = ts(randperm(size(ts, 1)), :);
-			
-			%append to the totallity of trials
-			trials = [trials; [ts, repmat(p, [size(ts, 1), 1])]];
+			%append to the totallity of trials, (with block)
+			trials = [trials; [ts, repmat(p, [size(ts, 1), 1]), repmat(b, [size(ts, 1), 1])]];
 		end
 	end
 	
@@ -54,7 +53,6 @@ function spatialBias(params)
 	
 	% Get the centre coordinate of the window
 	[xc, yc] = RectCenter(windowRect);
-	
 	fixRect = [xc, yc, xc, yc] + [-xpix, -xpix, xpix, xpix]*.05;
 	
 	%Construct the grid
@@ -88,13 +86,28 @@ function spatialBias(params)
 		distractors{t} = Screen('MakeTexture', window, distractors{t});
 	end
 	
+	%initiate data struct
+	data = struct;
+	data.richQ = params.richQ;
+	
+	
+	phaseKeys = {'Acquisition', 'Extinction', 'Reacquisition'};
+	
 	%create a filename to save the data
+	if isempty(params.name)
+		s = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+		params.name = s(randi(length(s), [1, 10]));
+	end
 	fname = sprintf('./data/%s_%s_%d-%d.txt', params.name, date(), clock()(4:5)); 
+	data.subject = params.name;
 	%Give trials
 	expRunning = 1; %This keeps the while loop going
 	currentTrial = 1; %Trial counter
-	expState = 'PRACTICEBEGIN'; %expState is the variable we use in the switch-case conditionals; every time we want to advance within the trial, or between trials, we change that variable;
-	%we start expState as PRACTICEBEGIN
+	if params.debugmode
+		expState = 'PRACTICESUCCESS';
+	else
+		expState = 'PRACTICEBEGIN'; %expState is the variable we use in the switch-case conditionals; every time we want to advance within the trial, or between trials, we change that variable;
+	end
 	while expRunning
 		%Check if we need to abort the experiment (Q and P being pressed in the keyboard)
 		expState = abortCheck(expState);
@@ -139,7 +152,6 @@ function spatialBias(params)
 				DrawFormattedText(window, message, 'center', 'center', [1, 1, 1]);
 				Screen('Flip', window);
 				expState = 'PRACTICEREPEATGO';
-			
 				
 			case 'PRACTICESUCCESS'
 				inPractice = 0;
@@ -151,14 +163,11 @@ function spatialBias(params)
 				DrawFormattedText(window, message, 'center', 'center', [1, 1, 1]);
 				Screen('Flip', window);
 				expState = 'INITEXPGO';
-			
-				
 				
 			case 'INITTRIAL';
 				%read trial data
 				targetQuadrant = aTrials(currentTrial, 1);
 				correctOrientation = aTrials(currentTrial, 2);
-				
 				%randomize position for each grid, by shuffling the positions belonging to each grid, and picking qStims from each
 				positions = [];
 				trialPositions = [];
@@ -251,10 +260,20 @@ function spatialBias(params)
 		
 			case 'TRIALEND'
 				if ~inPractice
+					%add stuff to the data struct and save
+					data.trial = currentTrial;
+					data.targetQ = targetQuadrant;
+					data.accuracy = acc;
+					data.RT = RT;
+					data.targetO = correctOrientation;
+					data.phase = phaseKeys{aTrials(currentTrial, 3)};
+					data.barRT = barRT;
+					data.trialStims = trialStims;
+					data.trialPositions = trialPositions;
+					data.phaseBlock = aTrials(currentTrial, 4);
+					if targetQuadrant == params.richQ; data.trialtype = 'Rich'; else data.trialtype = 'Sparse'; end
 					%save data
-					saveData(fname, [currentTrial,targetQuadrant,...
-									acc,RT,correctOrientation,aTrials(currentTrial, 3),...
-									barRT, params.richQ, trialStims, trialPositions]);
+					saveData(fname, data);
 					%Check if we're done running the experiment, otherwise go to the next trial
 					if currentTrial == maxTrials
 						expRunning = 0;
@@ -318,9 +337,20 @@ end
 %This function is specially important. You'll have to modify it so it saves the data you need.
 function saveData(fname, data)
 	f = fopen(fname, 'a');
-	fprintf(f, '%d\t%d\t%d\t%2.6f\t %d\t%d\t%2.4f\t%d\t%s\t%s\n', ... %trial, target q, correct, RT, target o, phase, spacert, richQ, trialStims, trialPositions
-		data(1), data(2), data(3), data(4), data(5), data(6), data(7), data(8),...
-		sprintf([repmat('%d,', [1, 11]), '%d'], data(9:20)), ...
-		sprintf([repmat('%d,', [1, 11]), '%d'], data(21:32)));
+	fprintf(f, '%s\t%d\t%s\t%2.4f\t%d\t%s\t%d\t%d\t%d\t%d\t%2.4f\t%s\t%s\n', ... 
+	    %trial, target q, correct, RT, target o, phase, spacert, richQ, trialStims, trialPositions
+		data.subject, %s
+		data.trial, %d
+		data.trialtype, %s
+		data.RT, %2.4f
+		data.accuracy, %d
+		data.phase, %s
+		data.phaseBlock, %d
+		data.richQ, %d
+		data.targetQ, %d
+		data.targetO, %d
+		data.barRT, %2.4f
+		sprintf([repmat('%d,', [1, 11]), '%d'], data.trialStims), ... %s
+		sprintf([repmat('%d,', [1, 11]), '%d'], data.trialPositions)); %s
 	fclose(f);
 end
