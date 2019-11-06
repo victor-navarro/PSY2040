@@ -26,7 +26,6 @@ def tts(wlist, file_prefix):
 
         # The response's audio_content is binary.
         filename = '%s%d.wav' % (file_prefix, w+1)
-        print(filename)
         with open('./sound_files/%s' % filename, 'wb') as out:
             # Write the response to the output file.
             out.write(response.audio_content)
