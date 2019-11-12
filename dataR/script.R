@@ -9,7 +9,7 @@ theData = read.table("C:/Users/vnavarro/OneDrive - University of Iowa/UIOWA/2019
                      sep = '\t', header = T)
 
 #trim reaction times and incorrect trials
-#theData = theData[theData$REACTION_TIME > 100 & theData$REACTION_TIME < 1500 & theData$ACCURACY, ]
+theData = theData[theData$REACTION_TIME > 100 & theData$REACTION_TIME < 1500 & theData$ACCURACY, ]
 #get summary table
 t = aggregate(REACTION_TIME~Subject+ISI+Target_Type+Set_Size, theData, mean)
 #generate plot
@@ -19,8 +19,15 @@ ggplot(t, aes(x = Set_Size, y = REACTION_TIME, colour = Target_Type)) +
   theme_bw() +
   facet_wrap(~ISI)
 
+#import lmerTest package for mixed effects models
+lmerTestinstall = require(lmerTest)
+if (!lmerTestinstall){
+  install.packages('lmerTest')
+  library(lmerTest)
+}
+
 #fit regression model for each ISI (slope estimates and differences)
-m0 = lm(REACTION_TIME~Set_Size*Target_Type, data = t[t$ISI == 0, ])
+m0 = lmer(REACTION_TIME~Set_Size*Target_Type + (1 + Set_Size*Target_Type | Subject), data = t[t$ISI == 0, ])
 summary(m0)
-m200 = lm(REACTION_TIME~Set_Size*Target_Type, data = t[t$ISI == 200, ])
+m200 = lmer(REACTION_TIME~Set_Size*Target_Type + (1 + Set_Size*Target_Type | Subject), data = t[t$ISI == 200, ])
 summary(m200)
