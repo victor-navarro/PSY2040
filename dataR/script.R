@@ -9,7 +9,7 @@ theData = read.table("C:/Users/vnavarro/OneDrive - University of Iowa/UIOWA/2019
                      sep = '\t', header = T)
 
 #trim reaction times and incorrect trials
-theData = theData[theData$REACTION_TIME > 100 & theData$REACTION_TIME < 1500 & theData$ACCURACY, ]
+#theData = theData[theData$REACTION_TIME > 100 & theData$REACTION_TIME < 1500 & theData$ACCURACY, ]
 #get summary table
 t = aggregate(REACTION_TIME~Subject+ISI+Target_Type+Set_Size, theData, mean)
 #generate plot
